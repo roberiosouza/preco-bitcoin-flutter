@@ -12,14 +12,10 @@ class Home extends StatefulWidget {
 
 class _HomeState extends State<Home> {
   double _preco = 0;
-  _consultarBitcoin() async {
+  Future<Map> _consultarBitcoin() async {
     var url = Uri.parse("https://blockchain.info/ticker");
     http.Response respose = await http.get(url);
-    Map<String, dynamic> data = json.decode(respose.body);
-
-    setState(() {
-      _preco = data["BRL"]["buy"] as double;
-    });
+    return json.decode(respose.body);
   }
 
   @override
@@ -32,17 +28,36 @@ class _HomeState extends State<Home> {
             padding: EdgeInsets.all(30),
             child: Image.asset("images/bitcoin.png"),
           ),
-          Text(
-            "R\$ ${_preco.toString()}",
-            style: TextStyle(
-              fontSize: 30,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
+          FutureBuilder(
+              future: _consultarBitcoin(),
+              builder: (context, snapshot) {
+                switch (snapshot.connectionState) {
+                  case (ConnectionState.none):
+                  case (ConnectionState.active):
+                  case (ConnectionState.waiting):
+                    return Center(
+                      child: CircularProgressIndicator(),
+                    );
+                    break;
+                  case (ConnectionState.done):
+                    _preco = snapshot.data!["BRL"]["buy"];
+                }
+                return Text(
+                  "R\$ ${_preco.toString()}",
+                  style: TextStyle(
+                    fontSize: 30,
+                    fontWeight: FontWeight.w700,
+                  ),
+                );
+              }),
           Padding(
             padding: EdgeInsets.only(top: 20),
             child: ElevatedButton(
-              onPressed: _consultarBitcoin,
+              onPressed: () {
+                setState(() {
+                  _consultarBitcoin();
+                });
+              },
               child: Text(
                 "Consultar",
                 style: TextStyle(color: Colors.white),
